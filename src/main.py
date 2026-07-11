@@ -1,19 +1,18 @@
 import sys
 
-from PyQt6.QtWidgets import QApplication, QMainWindow
+from PyQt6.QtWidgets import QApplication
+
+from browser_window import BrowserWindow
 
 
-class BrowserWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
+def main():
+    app = QApplication(sys.argv)
 
-        self.setWindowTitle("Vanadium")
-        self.resize(1280, 720)
+    window = BrowserWindow()
+    window.show()
+
+    sys.exit(app.exec())
 
 
-app = QApplication(sys.argv)
-
-window = BrowserWindow()
-window.show()
-
-sys.exit(app.exec())
+if __name__ == "__main__":
+    main()
