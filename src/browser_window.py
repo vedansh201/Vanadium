@@ -18,6 +18,7 @@ class BrowserWindow(QMainWindow):
         """Configure the main application window."""
         self.setWindowTitle("Vanadium")
         self.resize(1280, 720)
+        self.statusBar().showMessage("Ready")
 
     def create_browser(self):
         """Create and configure the browser widget."""
@@ -68,6 +69,7 @@ class BrowserWindow(QMainWindow):
          self.browser.loadStarted.connect(self.load_started)
          self.browser.loadProgress.connect(self.update_progress)
          self.browser.loadFinished.connect(self.load_finished)
+         self.browser.titleChanged.connect(self.update_window_title)
 
     def go_home(self):
          """Navigate to the homepage."""
@@ -112,8 +114,8 @@ class BrowserWindow(QMainWindow):
          self.statusBar().addPermanentWidget(self.progress_bar)
 
     def load_started(self):
-         """Called when a page starts loading."""
          self.progress_bar.setVisible(True)
+         self.statusBar().showMessage("Loading...")
 
     def update_progress(self, progress):
          """Update the loading progress."""
@@ -121,6 +123,10 @@ class BrowserWindow(QMainWindow):
          self.progress_bar.setValue(progress)
 
     def load_finished(self):
-         """Called when loading finishes."""
-
          self.progress_bar.setVisible(False)
+         self.statusBar().showMessage("Ready")
+
+    def update_window_title(self, title):
+         """Update the application window title."""
+
+         self.setWindowTitle(f"{title} - Vanadium")
