@@ -27,7 +27,7 @@ class BrowserTabs(QTabWidget):
         self.setTabsClosable(True)
         self.setMovable(True)
         self.setDocumentMode(True)
-
+        self.tabCloseRequested.connect(self.close_tab)
         self.setCornerWidget(None)
         add_tab_button = QPushButton("+")
         add_tab_button.setFixedWidth(28)
@@ -71,3 +71,16 @@ class BrowserTabs(QTabWidget):
     def current_browser(self):
         """Return the browser in the current tab."""
         return self.currentWidget()
+
+    def close_tab(self, index):
+        """Close the selected tab."""
+
+    # Don't allow closing the last tab
+        if self.count() <= 1:
+             return
+
+        browser = self.widget(index)
+
+        self.removeTab(index)
+
+        browser.deleteLater()
