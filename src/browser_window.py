@@ -1,7 +1,8 @@
 from PyQt6.QtCore import QUrl
 from PyQt6.QtWidgets import( QMainWindow, QToolBar, QLineEdit, QPushButton, QProgressBar,)
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-
+from tab_widget import BrowserTabs
+from PyQt6.QtGui import QAction
 
 class BrowserWindow(QMainWindow):
     def __init__(self):
@@ -12,7 +13,9 @@ class BrowserWindow(QMainWindow):
         self.create_toolbar()
         self.create_progress_bar()
         self.connect_signals()
-
+        self.back_button.clicked.connect(self.go_back)
+        self.forward_button.clicked.connect(self.go_forward)
+        self.reload_button.clicked.connect(self.reload_page)
 
     def setup_window(self):
         """Configure the main application window."""
@@ -22,9 +25,8 @@ class BrowserWindow(QMainWindow):
 
     def create_browser(self):
         """Create and configure the browser widget."""
-        self.browser = QWebEngineView()
-        self.browser.setUrl(QUrl("https://duckduckgo.com"))
-        self.setCentralWidget(self.browser)
+        self.tabs = BrowserTabs()
+        self.setCentralWidget(self.tabs)
 
     def create_toolbar(self):
          """Create the navigation toolbar."""
@@ -37,6 +39,9 @@ class BrowserWindow(QMainWindow):
          self.forward_button = QPushButton("→")
          self.reload_button = QPushButton("↻")
          self.home_button = QPushButton("🏠")
+         self.new_tab_button = QAction("New Tab", self)
+         self.new_tab_button.setStatusTip("Open a new tab")
+         self.toolbar.addAction(self.new_tab_button)
 
     # Address bar
          self.address_bar = QLineEdit()
@@ -55,25 +60,27 @@ class BrowserWindow(QMainWindow):
 
     def connect_signals(self):
          """Connect buttons and widgets to their actions."""
-
-         self.back_button.clicked.connect(self.browser.back)
-         self.forward_button.clicked.connect(self.browser.forward)
-         self.reload_button.clicked.connect(self.browser.reload)
+                                                 
+                                                 
+         self.back_button.clicked.connect(self.tabs.current_browser().back)
+         self.forward_button.clicked.connect(self.tabs.current_browser().forward)
+         self.reload_button.clicked.connect(self.tabs.current_browser().reload)
          self.home_button.clicked.connect(self.go_home)
 
          self.go_button.clicked.connect(self.navigate)
 
          self.address_bar.returnPressed.connect(self.navigate)
 
-         self.browser.urlChanged.connect(self.update_address_bar)
-         self.browser.loadStarted.connect(self.load_started)
-         self.browser.loadProgress.connect(self.update_progress)
-         self.browser.loadFinished.connect(self.load_finished)
-         self.browser.titleChanged.connect(self.update_window_title)
+         self.tabs.url_changed.connect(self.update_address_bar)
+         self.tabs.load_started.connect(self.load_started)
+         self.tabs.load_progress.connect(self.update_progress)
+         self.tabs.load_finished.connect(self.load_finished)
+         self.tabs.title_changed.connect(self.update_window_title)
+         self.new_tab_button.triggered.connect(lambda: self.tabs.create_tab())
 
     def go_home(self):
          """Navigate to the homepage."""
-         self.browser.setUrl(QUrl("https://duckduckgo.com"))
+         self.tabs.current_browser().setUrl(QUrl("https://duckduckgo.com"))
 
     def navigate(self):
          """Navigate to a website or search the web."""
@@ -95,7 +102,7 @@ class BrowserWindow(QMainWindow):
              search_url = f"https://duckduckgo.com/?q={text.replace(' ', '+')}"
              url = QUrl(search_url)
 
-         self.browser.setUrl(url)
+         self.tabs.current_browser().setUrl(url)
 
     def update_address_bar(self, url):
          """Update the address bar when the page changes."""
@@ -130,3 +137,20 @@ class BrowserWindow(QMainWindow):
          """Update the application window title."""
 
          self.setWindowTitle(f"{title} - Vanadium")
+
+    def go_back(self):
+           browser = self.tabs.current_browser()
+           if browser:
+                browser.back()
+
+
+    def go_forward(self):
+           browser = self.tabs.current_browser()
+           if browser:
+                browser.forward()
+
+
+    def reload_page(self):
+           browser = self.tabs.current_browser()
+           if browser:
+                browser.reload()
