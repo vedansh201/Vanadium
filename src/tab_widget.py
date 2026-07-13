@@ -51,7 +51,17 @@ class BrowserTabs(QTabWidget):
          browser.titleChanged.connect(
               lambda title, browser=browser: self.update_tab_title(browser, title)
         )
+         browser.iconChanged.connect(
+              lambda icon, browser=browser: self.update_tab_icon(browser, icon)
+        )
+         
+         browser.loadStarted.connect(
+              lambda browser=browser: self.tab_loading_started(browser)
+        )
 
+         browser.loadFinished.connect(
+              lambda _, browser=browser: self.tab_loading_finished(browser)
+        )
         # Default homepage
          if url is None:
              url = QUrl("https://duckduckgo.com")
@@ -111,7 +121,18 @@ class BrowserTabs(QTabWidget):
          if len(title) > 20:
              title = title[:20] + "..."
 
-         self.setTabText(index, title)
+         full_title = title
+
+         if not title:
+             title = "New Tab"
+
+         display_title = title
+
+         if len(display_title) > 20:
+             display_title = display_title[:20] + "..."
+
+         self.setTabText(index, display_title)
+         self.setTabToolTip(index, full_title)
 
     def current_tab_changed(self, index):
          """Called whenever the active tab changes."""
@@ -121,3 +142,35 @@ class BrowserTabs(QTabWidget):
          if browser:
              self.url_changed.emit(browser.url())
              self.title_changed.emit(browser.title())
+
+    def update_tab_icon(self, browser, icon):
+         """Update the favicon of a browser tab."""
+
+         index = self.indexOf(browser)
+
+         if index != -1:
+             self.setTabIcon(index, icon)
+
+    def tab_loading_started(self, browser):
+         """Show loading text while a page is loading."""
+
+         index = self.indexOf(browser)
+
+         if index != -1:
+             self.setTabText(index, "Loading...")
+
+    def tab_loading_finished(self, browser):
+         """Restore the page title after loading."""
+
+         index = self.indexOf(browser)
+
+         if index != -1:
+             title = browser.title()
+
+             if not title:
+                 title = "New Tab"
+
+             if len(title) > 20:
+                 title = title[:20] + "..."
+
+             self.setTabText(index, title)

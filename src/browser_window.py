@@ -2,7 +2,7 @@ from PyQt6.QtCore import QUrl
 from PyQt6.QtWidgets import( QMainWindow, QToolBar, QLineEdit, QPushButton, QProgressBar,)
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from tab_widget import BrowserTabs
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import (QAction, QShortcut, QKeySequence)
 
 class BrowserWindow(QMainWindow):
     def __init__(self):
@@ -13,6 +13,7 @@ class BrowserWindow(QMainWindow):
         self.create_toolbar()
         self.create_progress_bar()
         self.connect_signals()
+        self.create_shortcuts()
         self.back_button.clicked.connect(self.go_back)
         self.forward_button.clicked.connect(self.go_forward)
         self.reload_button.clicked.connect(self.reload_page)
@@ -154,3 +155,27 @@ class BrowserWindow(QMainWindow):
            browser = self.tabs.current_browser()
            if browser:
                 browser.reload()
+
+    def create_shortcuts(self):
+           """Create keyboard shortcuts."""
+
+           self.new_tab_shortcut = QShortcut(QKeySequence("Ctrl+T"), self)
+           self.new_tab_shortcut.activated.connect(
+                lambda: self.tabs.create_tab()
+          )
+           self.close_tab_shortcut = QShortcut(QKeySequence("Ctrl+W"), self)
+           self.close_tab_shortcut.activated.connect(self.close_current_tab)
+           self.address_shortcut = QShortcut(QKeySequence("Ctrl+L"), self)
+           self.address_shortcut.activated.connect(self.focus_address_bar)
+
+    def close_current_tab(self):
+           """Close the currently selected tab."""
+   
+           index = self.tabs.currentIndex()
+           self.tabs.close_tab(index)
+
+    def focus_address_bar(self):
+           """Focus the address bar."""
+
+           self.address_bar.setFocus()
+           self.address_bar.selectAll()
