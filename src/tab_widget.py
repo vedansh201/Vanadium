@@ -31,7 +31,8 @@ class BrowserTabs(QTabWidget):
         self.setCornerWidget(None)
         add_tab_button = QPushButton("+")
         add_tab_button.setFixedWidth(28)
-
+        self.currentChanged.connect(self.tab_changed)
+        self.currentChanged.connect(self.current_tab_changed)
         add_tab_button.clicked.connect(self.create_tab)
 
         self.setCornerWidget(add_tab_button)
@@ -47,6 +48,9 @@ class BrowserTabs(QTabWidget):
          browser.loadStarted.connect(self.load_started)
          browser.loadProgress.connect(self.load_progress)
          browser.loadFinished.connect(self.load_finished)
+         browser.titleChanged.connect(
+              lambda title, browser=browser: self.update_tab_title(browser, title)
+        )
 
         # Default homepage
          if url is None:
@@ -73,14 +77,47 @@ class BrowserTabs(QTabWidget):
         return self.currentWidget()
 
     def close_tab(self, index):
-        """Close the selected tab."""
+         """Close a browser tab."""
 
-    # Don't allow closing the last tab
-        if self.count() <= 1:
+         browser = self.widget(index)
+
+         self.removeTab(index)
+
+         browser.deleteLater()
+
+         # Never leave the browser without a tab
+         if self.count() == 0:
+             self.create_tab()
+             
+    def tab_changed(self, index):
+         browser = self.current_browser()
+
+         if browser:
+             self.url_changed.emit(browser.url())
+             self.title_changed.emit(browser.title())
+
+    def update_tab_title(self, browser, title):
+         """Update the title of a browser tab."""
+
+         index = self.indexOf(browser)
+
+         if index == -1:
              return
 
-        browser = self.widget(index)
+         if not title:
+             title = "New Tab"
 
-        self.removeTab(index)
+       # Keep titles short
+         if len(title) > 20:
+             title = title[:20] + "..."
 
-        browser.deleteLater()
+         self.setTabText(index, title)
+
+    def current_tab_changed(self, index):
+         """Called whenever the active tab changes."""
+
+         browser = self.current_browser()
+
+         if browser:
+             self.url_changed.emit(browser.url())
+             self.title_changed.emit(browser.title())
