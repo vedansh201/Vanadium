@@ -3,6 +3,8 @@ from PyQt6.QtWidgets import( QMainWindow, QToolBar, QLineEdit, QPushButton, QPro
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from tab_widget import BrowserTabs
 from PyQt6.QtGui import (QAction, QShortcut, QKeySequence)
+from pathlib import Path
+
 
 class BrowserWindow(QMainWindow):
     def __init__(self):
@@ -40,6 +42,7 @@ class BrowserWindow(QMainWindow):
          self.forward_button = QPushButton("→")
          self.reload_button = QPushButton("↻")
          self.home_button = QPushButton("🏠")
+         self.settings_button = QPushButton("⚙")
          self.new_tab_button = QAction("New Tab", self)
          self.new_tab_button.setStatusTip("Open a new tab")
          self.toolbar.addAction(self.new_tab_button)
@@ -56,6 +59,7 @@ class BrowserWindow(QMainWindow):
          self.toolbar.addWidget(self.forward_button)
          self.toolbar.addWidget(self.reload_button)
          self.toolbar.addWidget(self.home_button)
+         self.toolbar.addWidget(self.settings_button)
          self.toolbar.addWidget(self.address_bar)
          self.toolbar.addWidget(self.go_button)
 
@@ -67,6 +71,7 @@ class BrowserWindow(QMainWindow):
          self.forward_button.clicked.connect(self.tabs.current_browser().forward)
          self.reload_button.clicked.connect(self.tabs.current_browser().reload)
          self.home_button.clicked.connect(self.go_home)
+         self.settings_button.clicked.connect(self.open_settings)
 
          self.go_button.clicked.connect(self.navigate)
 
@@ -80,8 +85,8 @@ class BrowserWindow(QMainWindow):
          self.new_tab_button.triggered.connect(lambda: self.tabs.create_tab())
 
     def go_home(self):
-         """Navigate to the homepage."""
-         self.tabs.current_browser().setUrl(QUrl("https://duckduckgo.com"))
+           home = (Path(__file__).parent.parent / "assets" / "home" / "home.html").resolve()
+           self.tabs.current_browser().setUrl(QUrl.fromLocalFile(str(home)))
 
     def navigate(self):
          """Navigate to a website or search the web."""
@@ -98,16 +103,21 @@ class BrowserWindow(QMainWindow):
 
              url = QUrl(text)
 
-    # Otherwise, search using DuckDuckGo
+    # Otherwise, search using Google
          else:
-             search_url = f"https://duckduckgo.com/?q={text.replace(' ', '+')}"
+             search_url = f"""https://www.google.com/search?q={text.replace(' ', '+')}"""
              url = QUrl(search_url)
 
          self.tabs.current_browser().setUrl(url)
 
     def update_address_bar(self, url):
          """Update the address bar when the page changes."""
-
+         if url.scheme() == "vanadium":
+                print(url.toString())
+                return
+         if url.isLocalFile():
+                self.address_bar.setText("vanadium://home")
+                return
          self.address_bar.setText(url.toString())
 
     def create_progress_bar(self):
@@ -179,3 +189,17 @@ class BrowserWindow(QMainWindow):
 
            self.address_bar.setFocus()
            self.address_bar.selectAll()
+
+    def update_address_bar(self, url):
+           print("Navigating to:", url.toString())
+
+           if url.isLocalFile():
+                self.address_bar.setText("vanadium://home")
+                return
+
+           self.address_bar.setText(url.toString())
+
+    def open_settings(self):
+           """Open the settings window."""
+
+           print("Settings clicked")

@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import( QTabWidget, QPushButton )
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtCore import QUrl
 from PyQt6.QtCore import QUrl, pyqtSignal
+from pathlib import Path
 
 class BrowserTabs(QTabWidget):
     """Manages all browser tabs."""
@@ -24,9 +25,6 @@ class BrowserTabs(QTabWidget):
         self.setDocumentMode(True)
         self.setTabsClosable(True)
         self.setMovable(True)
-        self.setTabsClosable(True)
-        self.setMovable(True)
-        self.setDocumentMode(True)
         self.tabCloseRequested.connect(self.close_tab)
         self.setCornerWidget(None)
         add_tab_button = QPushButton("+")
@@ -39,6 +37,9 @@ class BrowserTabs(QTabWidget):
 
     def create_tab(self, url=None):
          """Create a new browser tab."""
+
+         if not isinstance(url, QUrl):
+             url = None
 
          browser = QWebEngineView()
 
@@ -64,7 +65,9 @@ class BrowserTabs(QTabWidget):
         )
         # Default homepage
          if url is None:
-             url = QUrl("https://duckduckgo.com")
+              home_page = (Path(__file__).parent.parent / "assets" / "home" / "home.html").resolve()
+
+              url = QUrl.fromLocalFile(str(home_page))
 
          browser.setUrl(url)
 
