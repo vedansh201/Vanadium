@@ -86,3 +86,8 @@ h1 {
 .settings-section {
     margin-top: 40px;
 }
+body {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}

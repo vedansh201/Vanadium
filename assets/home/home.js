@@ -3,6 +3,16 @@ let bridge = null;
 new QWebChannel(qt.webChannelTransport, function(channel) {
 
     bridge = channel.objects.bridge;
+    bridge.getWallpaper(function(path) {
+
+         if (path !== "") {
+
+             document.body.style.backgroundImage =
+                 `url("file:///${path.replace(/\\/g, "/")}")`;
+
+         }
+
+     });
 
     console.log("Connected to Python!");
 
