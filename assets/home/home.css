@@ -83,3 +83,6 @@ h1 {
 .quick-links button:hover {
     background: #3f3f46;
 }
+.settings-section {
+    margin-top: 40px;
+}

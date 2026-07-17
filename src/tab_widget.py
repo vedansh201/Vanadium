@@ -3,6 +3,7 @@ from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtCore import QUrl
 from PyQt6.QtCore import QUrl, pyqtSignal
 from pathlib import Path
+from PyQt6.QtWebChannel import QWebChannel
 
 class BrowserTabs(QTabWidget):
     """Manages all browser tabs."""
@@ -17,31 +18,33 @@ class BrowserTabs(QTabWidget):
         super().__init__()
 
         self.setup_tabs()
-        self.create_tab()
 
     def setup_tabs(self):
-        """Configure the tab widget."""
+         """Configure the tab widget."""
 
-        self.setDocumentMode(True)
-        self.setTabsClosable(True)
-        self.setMovable(True)
-        self.tabCloseRequested.connect(self.close_tab)
-        self.setCornerWidget(None)
-        add_tab_button = QPushButton("+")
-        add_tab_button.setFixedWidth(28)
-        self.currentChanged.connect(self.tab_changed)
-        self.currentChanged.connect(self.current_tab_changed)
-        add_tab_button.clicked.connect(self.create_tab)
+         self.setDocumentMode(True)
+         self.setTabsClosable(True)
+         self.setMovable(True)
 
-        self.setCornerWidget(add_tab_button)
+         self.tabCloseRequested.connect(self.close_tab)
 
-    def create_tab(self, url=None):
+         self.add_tab_button = QPushButton("+")
+         self.add_tab_button.setFixedWidth(28)
+
+         self.setCornerWidget(self.add_tab_button)
+
+         self.currentChanged.connect(self.tab_changed)
+         self.currentChanged.connect(self.current_tab_changed)
+
+    def create_tab(self, url=None, channel=None):
          """Create a new browser tab."""
 
          if not isinstance(url, QUrl):
              url = None
 
          browser = QWebEngineView()
+         if channel is not None:
+             browser.page().setWebChannel(channel)
 
        # Connect browser signals
          browser.urlChanged.connect(self.url_changed)

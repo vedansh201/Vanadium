@@ -4,22 +4,30 @@ from PyQt6.QtWebEngineWidgets import QWebEngineView
 from tab_widget import BrowserTabs
 from PyQt6.QtGui import (QAction, QShortcut, QKeySequence)
 from pathlib import Path
-
+from settings_dialog import SettingsDialog
+from settings_manager import load_settings
+from bridge import BrowserBridge
+from PyQt6.QtWebChannel import QWebChannel
 
 class BrowserWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
         self.setup_window()
+
+        self.bridge = BrowserBridge(self)
+        self.channel = QWebChannel()
+        self.channel.registerObject("bridge", self.bridge)
+
         self.create_browser()
         self.create_toolbar()
         self.create_progress_bar()
         self.connect_signals()
         self.create_shortcuts()
+
         self.back_button.clicked.connect(self.go_back)
         self.forward_button.clicked.connect(self.go_forward)
         self.reload_button.clicked.connect(self.reload_page)
-
     def setup_window(self):
         """Configure the main application window."""
         self.setWindowTitle("Vanadium")
@@ -30,6 +38,7 @@ class BrowserWindow(QMainWindow):
         """Create and configure the browser widget."""
         self.tabs = BrowserTabs()
         self.setCentralWidget(self.tabs)
+        self.tabs.create_tab(channel=self.channel)
 
     def create_toolbar(self):
          """Create the navigation toolbar."""
@@ -82,34 +91,18 @@ class BrowserWindow(QMainWindow):
          self.tabs.load_progress.connect(self.update_progress)
          self.tabs.load_finished.connect(self.load_finished)
          self.tabs.title_changed.connect(self.update_window_title)
-         self.new_tab_button.triggered.connect(lambda: self.tabs.create_tab())
+         self.new_tab_button.triggered.connect(lambda: self.tabs.create_tab(channel=self.channel))
+         self.tabs.add_tab_button.clicked.connect(
+                lambda: self.tabs.create_tab(channel=self.channel)
+          )
 
     def go_home(self):
            home = (Path(__file__).parent.parent / "assets" / "home" / "home.html").resolve()
            self.tabs.current_browser().setUrl(QUrl.fromLocalFile(str(home)))
 
     def navigate(self):
-         """Navigate to a website or search the web."""
-
-         text = self.address_bar.text().strip()
-
-         if not text:
-             return
-
-    # If it looks like a website
-         if "." in text:
-             if not text.startswith(("http://", "https://")):
-                 text = "https://" + text
-
-             url = QUrl(text)
-
-    # Otherwise, search using Google
-         else:
-             search_url = f"""https://www.google.com/search?q={text.replace(' ', '+')}"""
-             url = QUrl(search_url)
-
-         self.tabs.current_browser().setUrl(url)
-
+           self.navigate_to_text(self.address_bar.text())
+           
     def update_address_bar(self, url):
          """Update the address bar when the page changes."""
          if url.scheme() == "vanadium":
@@ -171,7 +164,7 @@ class BrowserWindow(QMainWindow):
 
            self.new_tab_shortcut = QShortcut(QKeySequence("Ctrl+T"), self)
            self.new_tab_shortcut.activated.connect(
-                lambda: self.tabs.create_tab()
+                lambda: self.tabs.create_tab(channel=self.channel)
           )
            self.close_tab_shortcut = QShortcut(QKeySequence("Ctrl+W"), self)
            self.close_tab_shortcut.activated.connect(self.close_current_tab)
@@ -200,6 +193,40 @@ class BrowserWindow(QMainWindow):
            self.address_bar.setText(url.toString())
 
     def open_settings(self):
-           """Open the settings window."""
+           dialog = SettingsDialog()
+           dialog.exec()
 
-           print("Settings clicked")
+    def navigate_to_text(self, text):
+           """Navigate to a website or search query."""
+
+           text = text.strip()
+
+           if not text:
+                return
+
+    # Website
+           if "." in text:
+                if not text.startswith(("http://", "https://")):
+                     text = "https://" + text
+
+                url = QUrl(text)
+
+    # Search
+           else:
+                settings = load_settings()
+                engine = settings.get("search_engine", "bing")
+
+                query = text.replace(" ", "+")
+
+                if engine == "bing":
+                     search_url = f"https://www.bing.com/search?q={query}"
+
+                elif engine == "duckduckgo":
+                     search_url = f"https://duckduckgo.com/?q={query}"
+
+                else:
+                     search_url = f"https://www.google.com/search?q={query}"
+
+                url = QUrl(search_url)
+
+           self.tabs.current_browser().setUrl(url)

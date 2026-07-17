@@ -1,3 +1,14 @@
+let bridge = null;
+
+new QWebChannel(qt.webChannelTransport, function(channel) {
+
+    bridge = channel.objects.bridge;
+
+    console.log("Connected to Python!");
+
+});
+
+
 function navigate(text) {
 
     text = text.trim();
@@ -5,28 +16,11 @@ function navigate(text) {
     if (text === "")
         return;
 
-    // Looks like a website
-    if (text.includes(".")) {
-
-        if (!text.startsWith("http://") &&
-            !text.startsWith("https://")) {
-
-            text = "https://" + text;
-        }
-
-        window.location.href = text;
+    if (bridge) {
+        bridge.search(text);
     }
 
-    // Otherwise search DuckDuckGo
-    else {
-
-        window.location.href =
-            "https://www.bing.com/search?q=" +
-            encodeURIComponent(text);
-    }
 }
-
-
 // Search bar
 const searchBox = document.getElementById("searchBox");
 
