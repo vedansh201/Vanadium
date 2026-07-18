@@ -5,7 +5,7 @@
 }
 
 body {
-    background: #18181b;
+    background: #19191d;
     color: white;
     font-family: "Segoe UI", Arial, sans-serif;
 
@@ -90,4 +90,30 @@ body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+}
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: -1;
+}
+.quick-links button,
+.search-container input {
+    backdrop-filter: blur(12px);
+}
+.container {
+    animation: fadeIn .5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

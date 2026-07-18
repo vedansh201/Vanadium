@@ -8,6 +8,8 @@ from settings_dialog import SettingsDialog
 from settings_manager import load_settings
 from bridge import BrowserBridge
 from PyQt6.QtWebChannel import QWebChannel
+from bookmark_manager import BookmarkManager
+from PyQt6.QtWidgets import QMenu
 
 class BrowserWindow(QMainWindow):
     def __init__(self):
@@ -18,7 +20,7 @@ class BrowserWindow(QMainWindow):
         self.bridge = BrowserBridge(self)
         self.channel = QWebChannel()
         self.channel.registerObject("bridge", self.bridge)
-
+        self.bookmarks = BookmarkManager()
         self.create_browser()
         self.create_toolbar()
         self.create_progress_bar()
@@ -28,6 +30,8 @@ class BrowserWindow(QMainWindow):
         self.back_button.clicked.connect(self.go_back)
         self.forward_button.clicked.connect(self.go_forward)
         self.reload_button.clicked.connect(self.reload_page)
+        self.refresh_bookmarks()
+        
     def setup_window(self):
         """Configure the main application window."""
         self.setWindowTitle("Vanadium")
@@ -52,6 +56,13 @@ class BrowserWindow(QMainWindow):
          self.reload_button = QPushButton("↻")
          self.home_button = QPushButton("🏠")
          self.settings_button = QPushButton("⚙")
+         self.bookmark_button = QPushButton("⭐")
+         self.bookmarks_menu = QMenu("Bookmarks", self)
+
+         self.bookmarks_dropdown = QPushButton("▼")
+         self.bookmarks_dropdown.setMenu(self.bookmarks_menu)
+
+         self.toolbar.addWidget(self.bookmarks_dropdown)
          self.new_tab_button = QAction("New Tab", self)
          self.new_tab_button.setStatusTip("Open a new tab")
          self.toolbar.addAction(self.new_tab_button)
@@ -69,6 +80,7 @@ class BrowserWindow(QMainWindow):
          self.toolbar.addWidget(self.reload_button)
          self.toolbar.addWidget(self.home_button)
          self.toolbar.addWidget(self.settings_button)
+         self.toolbar.addWidget(self.bookmark_button)
          self.toolbar.addWidget(self.address_bar)
          self.toolbar.addWidget(self.go_button)
 
@@ -81,6 +93,7 @@ class BrowserWindow(QMainWindow):
          self.reload_button.clicked.connect(self.tabs.current_browser().reload)
          self.home_button.clicked.connect(self.go_home)
          self.settings_button.clicked.connect(self.open_settings)
+         self.bookmark_button.clicked.connect(self.add_bookmark)
 
          self.go_button.clicked.connect(self.navigate)
 
@@ -230,3 +243,35 @@ class BrowserWindow(QMainWindow):
                 url = QUrl(search_url)
 
            self.tabs.current_browser().setUrl(url)
+
+    def add_bookmark(self):
+
+           browser = self.tabs.current_browser()
+
+           if browser is None:
+                return
+
+           title = browser.title()
+
+           url = browser.url().toString()
+
+           self.bookmarks.add_bookmark(title, url)
+
+           self.statusBar().showMessage(
+                "Bookmark added!",
+                 3000
+           )
+
+    def refresh_bookmarks(self):
+           """Refresh the bookmarks menu."""
+
+           self.bookmarks_menu.clear()
+
+           for bookmark in self.bookmarks.all_bookmarks():
+
+                action = self.bookmarks_menu.addAction(bookmark["title"])
+
+                action.triggered.connect(
+                     lambda checked=False, url=bookmark["url"]:
+                     self.tabs.current_browser().setUrl(QUrl(url))
+                )
