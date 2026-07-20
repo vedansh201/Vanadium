@@ -10,8 +10,11 @@ from bridge import BrowserBridge
 from PyQt6.QtWebChannel import QWebChannel
 from bookmark_manager import BookmarkManager
 from PyQt6.QtWidgets import QMenu
+from history_manager import HistoryManager
+from history_dialog import HistoryDialog
 
 class BrowserWindow(QMainWindow):
+    
     def __init__(self):
         super().__init__()
 
@@ -21,6 +24,7 @@ class BrowserWindow(QMainWindow):
         self.channel = QWebChannel()
         self.channel.registerObject("bridge", self.bridge)
         self.bookmarks = BookmarkManager()
+        self.history = HistoryManager()
         self.create_browser()
         self.create_toolbar()
         self.create_progress_bar()
@@ -31,7 +35,7 @@ class BrowserWindow(QMainWindow):
         self.forward_button.clicked.connect(self.go_forward)
         self.reload_button.clicked.connect(self.reload_page)
         self.refresh_bookmarks()
-        
+
     def setup_window(self):
         """Configure the main application window."""
         self.setWindowTitle("Vanadium")
@@ -58,6 +62,8 @@ class BrowserWindow(QMainWindow):
          self.settings_button = QPushButton("⚙")
          self.bookmark_button = QPushButton("⭐")
          self.bookmarks_menu = QMenu("Bookmarks", self)
+         self.history_button = QPushButton("📜")
+         self.toolbar.addWidget(self.history_button)
 
          self.bookmarks_dropdown = QPushButton("▼")
          self.bookmarks_dropdown.setMenu(self.bookmarks_menu)
@@ -94,6 +100,7 @@ class BrowserWindow(QMainWindow):
          self.home_button.clicked.connect(self.go_home)
          self.settings_button.clicked.connect(self.open_settings)
          self.bookmark_button.clicked.connect(self.add_bookmark)
+         self.history_button.clicked.connect(self.open_history)
 
          self.go_button.clicked.connect(self.navigate)
 
@@ -149,6 +156,14 @@ class BrowserWindow(QMainWindow):
     def load_finished(self):
          self.progress_bar.setVisible(False)
          self.statusBar().showMessage("Ready")
+         browser = self.tabs.current_browser()
+         print("Page finished loading!")
+
+         if browser:
+                self.history.add_visit(
+                     browser.title(),
+                     browser.url().toString()
+                )
 
     def update_window_title(self, title):
          """Update the application window title."""
@@ -231,6 +246,7 @@ class BrowserWindow(QMainWindow):
 
                 query = text.replace(" ", "+")
 
+
                 if engine == "bing":
                      search_url = f"https://www.bing.com/search?q={query}"
 
@@ -275,3 +291,10 @@ class BrowserWindow(QMainWindow):
                      lambda checked=False, url=bookmark["url"]:
                      self.tabs.current_browser().setUrl(QUrl(url))
                 )
+
+
+    def open_history(self):
+           """Open the browsing history."""
+
+           dialog = HistoryDialog(self.history, self)
+           dialog.exec()
