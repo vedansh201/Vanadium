@@ -35,9 +35,24 @@ class SettingsDialog(QDialog):
 
         layout.addWidget(title)
 
-        # ----------------------------
-        # Homepage Settings
-        # ----------------------------
+
+        appearance_group = QGroupBox("Appearance")
+
+        appearance_layout = QVBoxLayout()
+
+        self.light_radio = QRadioButton("☀ Light")
+        self.dark_radio = QRadioButton("🌙 Dark")
+
+        self.light_radio.setChecked(True)
+
+        appearance_layout.addWidget(self.light_radio)
+        appearance_layout.addWidget(self.dark_radio)
+
+        appearance_group.setLayout(appearance_layout)
+
+        layout.addWidget(appearance_group)
+
+
         homepage_group = QGroupBox("Homepage")
 
         
@@ -124,56 +139,12 @@ class SettingsDialog(QDialog):
          # Update settings
          settings["search_engine"] = search_engine
 
-    # Save wallpaper if one was selected
-         if hasattr(self, "wallpaper_path"):
-             settings["wallpaper"] = self.wallpaper_path
- 
-         with open(settings_file, "w") as file:
-             json.dump(settings, file, indent=4)
-
-         self.accept()
-
-    def load_settings(self):
-         """Load saved settings."""
-
-         settings_file = (
-             Path(__file__).parent.parent /
-             "settings.json"
-         )
-         if not settings_file.exists():
-             self.wallpaper_path = ""
-             self.wallpaper_label.setText("Current: Default")
-             return
          
-         with open(settings_file, "r") as file:
-             settings = json.load(file)
-        
-    def save_settings(self):
-         """Save the user's settings."""
-
-         if self.bing_radio.isChecked():
-             search_engine = "bing"
-
-         elif self.ddg_radio.isChecked():
-             search_engine = "duckduckgo"
-
+         
+         if self.dark_radio.isChecked():
+             settings["theme"] = "dark"
          else:
-             search_engine = "google"
-
-         settings_file = (
-             Path(__file__).parent.parent /
-             "settings.json"
-         )
-
-         # Load existing settings if they exist
-         if settings_file.exists():
-             with open(settings_file, "r") as file:
-                 settings = json.load(file)
-         else:
-             settings = {}
-
-         # Update settings
-         settings["search_engine"] = search_engine
+             settings["theme"] = "light"
 
     # Save wallpaper if one was selected
          if hasattr(self, "wallpaper_path"):
@@ -183,6 +154,8 @@ class SettingsDialog(QDialog):
              json.dump(settings, file, indent=4)
 
          self.accept()
+
+        
 
     def load_settings(self):
          """Load saved settings."""
@@ -213,6 +186,13 @@ class SettingsDialog(QDialog):
              self.ddg_radio.setChecked(True)
          else:
              self.google_radio.setChecked(True)
+
+         theme = settings.get("theme", "light")
+
+         if theme == "dark":
+             self.dark_radio.setChecked(True)
+         else:
+             self.light_radio.setChecked(True)
 
          if self.wallpaper_path:
              self.wallpaper_label.setText(

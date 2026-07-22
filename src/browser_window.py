@@ -12,6 +12,10 @@ from bookmark_manager import BookmarkManager
 from PyQt6.QtWidgets import QMenu
 from history_manager import HistoryManager
 from history_dialog import HistoryDialog
+from PyQt6.QtWebEngineCore import QWebEngineProfile
+from PyQt6.QtWidgets import QFileDialog
+from download_manager import DownloadManager
+from downloads_dialog import DownloadsDialog
 
 class BrowserWindow(QMainWindow):
     
@@ -25,6 +29,8 @@ class BrowserWindow(QMainWindow):
         self.channel.registerObject("bridge", self.bridge)
         self.bookmarks = BookmarkManager()
         self.history = HistoryManager()
+        self.download_manager = DownloadManager()
+        self.active_downloads = []
         self.create_browser()
         self.create_toolbar()
         self.create_progress_bar()
@@ -35,6 +41,8 @@ class BrowserWindow(QMainWindow):
         self.forward_button.clicked.connect(self.go_forward)
         self.reload_button.clicked.connect(self.reload_page)
         self.refresh_bookmarks()
+        profile = QWebEngineProfile.defaultProfile()
+        profile.downloadRequested.connect(self.handle_download)
 
     def setup_window(self):
         """Configure the main application window."""
@@ -63,6 +71,8 @@ class BrowserWindow(QMainWindow):
          self.bookmark_button = QPushButton("⭐")
          self.bookmarks_menu = QMenu("Bookmarks", self)
          self.history_button = QPushButton("📜")
+         self.downloads_button = QPushButton("⬇")
+         self.toolbar.addWidget(self.downloads_button)
          self.toolbar.addWidget(self.history_button)
 
          self.bookmarks_dropdown = QPushButton("▼")
@@ -101,7 +111,9 @@ class BrowserWindow(QMainWindow):
          self.settings_button.clicked.connect(self.open_settings)
          self.bookmark_button.clicked.connect(self.add_bookmark)
          self.history_button.clicked.connect(self.open_history)
-
+         self.downloads_button.clicked.connect(
+                self.open_downloads
+          )
          self.go_button.clicked.connect(self.navigate)
 
          self.address_bar.returnPressed.connect(self.navigate)
@@ -169,6 +181,7 @@ class BrowserWindow(QMainWindow):
          """Update the application window title."""
 
          self.setWindowTitle(f"{title} - Vanadium")
+
 
     def go_back(self):
            browser = self.tabs.current_browser()
@@ -297,4 +310,80 @@ class BrowserWindow(QMainWindow):
            """Open the browsing history."""
 
            dialog = HistoryDialog(self.history, self)
+           dialog.exec()
+
+    def handle_download(self, download):
+           """Handle a new download request."""
+
+           filename, _ = QFileDialog.getSaveFileName(
+                self,
+                "Save File",
+                download.downloadFileName()
+           )
+
+           if not filename:
+                download.cancel()
+                return
+
+           download.setDownloadDirectory(
+                str(Path(filename).parent)
+           )
+
+           download.setDownloadFileName(
+                Path(filename).name
+           )
+           self.active_downloads.append(download)
+
+           download.accept()
+
+           download.receivedBytesChanged.connect(
+                lambda: self.download_progress(download)
+           )
+
+           download.isFinishedChanged.connect(
+                lambda: self.download_finished(download)
+           )
+
+    def download_progress(self, download):
+           """Track download progress."""
+
+           received = download.receivedBytes()
+           total = download.totalBytes()
+
+           if total > 0:
+                percent = int(received * 100 / total)
+                self.statusBar().showMessage(
+                     f"Downloading... {percent}%"
+                )
+
+    def download_finished(self, download):
+           """Called when a download finishes."""
+
+           path = str(
+                Path(download.downloadDirectory()) /
+                download.downloadFileName()
+           )
+
+           self.download_manager.add_download(
+                download.downloadFileName(),
+                path,
+                "Completed"
+           )
+
+           self.statusBar().showMessage(
+                "Download complete!",
+                3000
+          )
+
+           if download in self.active_downloads:
+                self.active_downloads.remove(download)
+
+    def open_downloads(self):
+           """Open the downloads window."""
+
+           dialog = DownloadsDialog(
+                self.download_manager,
+                self
+           )
+
            dialog.exec()
